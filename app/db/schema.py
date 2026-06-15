@@ -1,10 +1,17 @@
 from sqlalchemy import String, create_engine
+import os
 from sqlalchemy import Boolean, ForeignKey, Integer
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 from app.core.config import config
 
-engine = create_engine(config.db_url)
+# Allow enabling SQL echo for debugging via env var SQL_ECHO=true
+echo = os.getenv("SQL_ECHO", "false").lower() in ("1", "true", "yes")
+
+# Pass an application_name so Postgres logs show which connections belong to this app
+connect_args = {"application_name": config.app_name}
+
+engine = create_engine(config.db_url, echo=echo, connect_args=connect_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
