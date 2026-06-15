@@ -1,7 +1,7 @@
 [project]
-name = "backend_service"
+name = "feature_flag_service"
 version = "0.1.0"
-description = "Default backend service"
+description = "Feature flag service"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
