@@ -38,3 +38,8 @@ class TTLCache:
     def clear(self) -> None:
         with self._lock:
             self._store.clear()
+
+
+# Module-level shared in-process cache (one per process). Use this for
+# cross-request caching within the same service instance.
+cache = TTLCache()

@@ -8,7 +8,7 @@ from app.models.feature import (
     EvalResponse,
 )
 from app.services.flag_service import FlagService
-from app.services.cache import TTLCache
+from app.services.cache import cache as shared_cache
 
 router = APIRouter()
 
@@ -17,8 +17,8 @@ def get_flag_service():
     session = SessionLocal()
     try:
         # single shared in-memory cache per request dependency instance
-        cache = TTLCache()
-        yield FlagService(session=session, cache=cache)
+        # reuse process-global cache so GETs are cached across requests
+        yield FlagService(session=session, cache=shared_cache)
     finally:
         session.close()
 

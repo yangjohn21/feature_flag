@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from typing import Optional
+import os
 
 from app.db.schema import FeatureFlag, FeatureFlagOverride
 from app.services.cache import TTLCache
@@ -17,7 +18,8 @@ class FlagService:
         self._db.commit()
         self._db.refresh(flag)
         # cache flag
-        self._cache.set(f"flag:{flag.name}", flag, ttl=300)
+        flag_ttl = int(os.getenv("FLAG_CACHE_TTL", "300"))
+        self._cache.set(f"flag:{flag.name}", flag, ttl=flag_ttl)
         return flag
 
     def get_flag(self, name: str) -> Optional[FeatureFlag]:
@@ -86,16 +88,19 @@ class FlagService:
             )
             if override:
                 result = bool(override.enabled)
-                self._cache.set(key, result, ttl=60)
+                eval_ttl = int(os.getenv("EVAL_CACHE_TTL", "60"))
+                self._cache.set(key, result, ttl=eval_ttl)
                 return result
 
         # global override
         if flag.global_enabled is not None:
             result = bool(flag.global_enabled)
-            self._cache.set(key, result, ttl=60)
+            eval_ttl = int(os.getenv("EVAL_CACHE_TTL", "60"))
+            self._cache.set(key, result, ttl=eval_ttl)
             return result
 
         # default
         result = bool(flag.default_enabled)
-        self._cache.set(key, result, ttl=60)
+        eval_ttl = int(os.getenv("EVAL_CACHE_TTL", "60"))
+        self._cache.set(key, result, ttl=eval_ttl)
         return result
