@@ -4,17 +4,10 @@ from app.api.v1 import feature
 from app.core.config import config
 from app.core.logging import setup_logging
 from app.db.schema import Base, engine
-import re
 import logging
+import os
 
 setup_logging()
-
-# Log the resolved DB URL with the password masked to help debugging environment issues
-def _mask_db_url(url: str) -> str:
-    return re.sub(r"(://[^:/]+:)([^@]+)(@)", r"\1***\3", url)
-
-logger = logging.getLogger()
-logger.info("Resolved DB URL: %s", _mask_db_url(config.db_url))
 
 Base.metadata.create_all(bind=engine)
 
