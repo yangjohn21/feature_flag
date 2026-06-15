@@ -42,7 +42,7 @@ def list_flags(service: FlagService = Depends(get_flag_service)):
 def set_global(name: str, payload: FeatureUpdateState, service: FlagService = Depends(get_flag_service)):
     flag = service.set_global(name, payload.enabled)
     if not flag:
-        raise HTTPException(status_code=404, detail="Feature not found")
+        raise HTTPException(status_code=404, detail="Feature not found for global update")
     return flag
 
 
