@@ -28,10 +28,9 @@ class Config(BaseSettings):
         if self.database_url:
             return self._normalize_postgres_url(self.database_url)
 
-        return (
-            f"postgresql+psycopg://{self.db_user}:{self.db_password}"
-            f"@{self.db_host}:{self.db_port}/{self.db_name}"
-        )
+        # Default to a local SQLite database for developer convenience
+        # Use a file-based DB at ./<db_name>.db so the app state persists locally
+        return f"sqlite:///./{self.db_name}.db"
 
 
 config = Config()

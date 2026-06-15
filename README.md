@@ -1,39 +1,31 @@
 Starting the server:
 
-uv run uvicorn app.main:app --reload
+uvicorn app.main:app --reload
 
-Example requests:
+Feature Flag API examples (base: http://localhost:8000):
 
-Here’s a set of simple curl examples you can use to interact with your FastAPI app once it’s running (default at http://localhost:8000):
+Create a feature flag
 
-1️⃣ Create a User
-
-curl -X POST "http://localhost:8000/api/v1/users" \
+curl -X POST "http://localhost:8000/api/v1/flags" \
      -H "Content-Type: application/json" \
-     -d '{"name": "Ada Lovelace"}'
+     -d '{"name": "beta_feature", "description": "Beta", "default_enabled": false}'
 
+List flags
 
-2️⃣ Get All Users
+curl -X GET "http://localhost:8000/api/v1/flags"
 
-curl -X GET "http://localhost:8000/api/v1/users"
+Set global state
 
-
-3️⃣ Get a User by ID
-
-(Replace 1 with the actual ID from the create response)
-
-curl -X GET "http://localhost:8000/api/v1/users/1"
-
-
-4️⃣ Update a User
-
-curl -X PUT "http://localhost:8000/api/v1/users/1" \
+curl -X PUT "http://localhost:8000/api/v1/flags/beta_feature/global" \
      -H "Content-Type: application/json" \
-     -d '{"name": "Grace Hopper"}'
+     -d '{"enabled": true}'
 
+Set per-user override
 
-⸻
+curl -X PUT "http://localhost:8000/api/v1/flags/beta_feature/users/123" \
+     -H "Content-Type: application/json" \
+     -d '{"enabled": false}'
 
-5️⃣ Delete a User
+Evaluate for user
 
-curl -X DELETE "http://localhost:8000/api/v1/users/1"
+curl -X GET "http://localhost:8000/api/v1/flags/beta_feature/evaluate?user_id=123"
