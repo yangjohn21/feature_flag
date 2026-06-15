@@ -3,8 +3,9 @@ from sqlalchemy import select
 from typing import Optional
 import os
 
-from app.db.schema import FeatureFlag, FeatureFlagOverride
+from app.db.schema import FeatureFlag
 from app.services.cache import TTLCache
+from app.services.override_service import OverrideService
 
 
 class FlagService:
@@ -29,7 +30,8 @@ class FlagService:
         stmt = select(FeatureFlag).where(FeatureFlag.name == name)
         flag = self._db.execute(stmt).scalars().first()
         if flag:
-            self._cache.set(f"flag:{name}", flag, ttl=300)
+            flag_ttl = int(os.getenv("FLAG_CACHE_TTL", "300"))
+            self._cache.set(f"flag:{name}", flag, ttl=flag_ttl)
         return flag
 
     def list_flags(self) -> list[FeatureFlag]:
@@ -47,26 +49,7 @@ class FlagService:
         self._cache.delete_prefix(f"eval:{name}:")
         return flag
 
-    def set_user_override(self, name: str, user_id: int, enabled: bool) -> Optional[FeatureFlagOverride]:
-        flag = self.get_flag(name)
-        if not flag:
-            return None
-        # update or create override
-        override = (
-            self._db.query(FeatureFlagOverride)
-            .filter(FeatureFlagOverride.flag_id == flag.id)
-            .filter(FeatureFlagOverride.user_id == user_id)
-            .first()
-        )
-        if override:
-            override.enabled = enabled
-        else:
-            override = FeatureFlagOverride(flag_id=flag.id, user_id=user_id, enabled=enabled)
-            self._db.add(override)
-        self._db.commit()
-        # invalidate evaluation cache for this user/flag
-        self._cache.delete(f"eval:{name}:{user_id}")
-        return override
+    # Per-user overrides are handled by OverrideService
 
     def evaluate(self, name: str, user_id: Optional[int] = None) -> bool:
         key = f"eval:{name}:{user_id or 'anon'}"
@@ -80,12 +63,8 @@ class FlagService:
 
         # user override should take precedence over global
         if user_id is not None:
-            override = (
-                self._db.query(FeatureFlagOverride)
-                .filter(FeatureFlagOverride.flag_id == flag.id)
-                .filter(FeatureFlagOverride.user_id == user_id)
-                .first()
-            )
+            override_service = OverrideService(session=self._db, cache=self._cache)
+            override = override_service.get_user_override(name, user_id)
             if override:
                 result = bool(override.enabled)
                 eval_ttl = int(os.getenv("EVAL_CACHE_TTL", "60"))

@@ -9,6 +9,7 @@ from app.models.feature import (
 )
 from app.services.flag_service import FlagService
 from app.services.cache import cache as shared_cache
+from app.services.override_service import OverrideService
 
 router = APIRouter()
 
@@ -47,7 +48,10 @@ def set_global(name: str, payload: FeatureUpdateState, service: FlagService = De
 
 @router.put("/flags/{name}/users/{user_id}", status_code=status.HTTP_200_OK)
 def set_user_override(name: str, user_id: int, payload: FeatureUpdateState, service: FlagService = Depends(get_flag_service)):
-    ov = service.set_user_override(name, user_id, payload.enabled)
+    # use OverrideService for per-user override operations
+    session = service._db
+    override_service = OverrideService(session=session, cache=service._cache)
+    ov = override_service.set_user_override(name, user_id, payload.enabled)
     if not ov:
         raise HTTPException(status_code=404, detail="Feature not found")
     return {"success": True}
