@@ -6,12 +6,20 @@ from app.core.logging import setup_logging
 from app.db.schema import Base, engine
 import logging
 import os
+from contextlib import asynccontextmanager
 
 setup_logging()
 
-Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title=config.app_name)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception as exc:
+        logging.getLogger(__name__).warning("Skipping DB create_all at startup: %s", exc)
+    yield
+
+app = FastAPI(title=config.app_name, lifespan=lifespan)
 
 
 @app.get("/health")
