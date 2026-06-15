@@ -19,6 +19,11 @@ class Config(BaseSettings):
 
     @staticmethod
     def _normalize_postgres_url(url: str) -> str:
+        # DigitalOcean and other providers may supply either
+        # `postgres://...` or `postgresql://...` — SQLAlchemy + psycopg requires
+        # the `postgresql+psycopg://` scheme. Normalize both prefixes.
+        if url.startswith("postgres://"):
+            return url.replace("postgres://", "postgresql+psycopg://", 1)
         if url.startswith("postgresql://"):
             return url.replace("postgresql://", "postgresql+psycopg://", 1)
         return url
